@@ -11,39 +11,37 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Install nyc globally
+      - name: Install nyc for coverage
         run: npm install -g nyc
 
       - name: Run server tests
-        run: npm run test:server || echo "Server tests failed"
+        run: |
+          npm run test:server || echo "Server tests failed"
 
       - name: Run frontend tests
-        run: npm run test:frontend || echo "Frontend tests failed"
+        run: |
+          npm run test:frontend || echo "Frontend tests failed"
 
-      - name: Copy coverage reports (optional)
+      - name: Copy coverage reports (if available)
         run: |
           cp build/reports/coverage/frontend-tests/lcov.info frontend-lcov.info || echo "Frontend coverage not found"
           cp build/reports/coverage/server-tests/lcov.info server-lcov.info || echo "Server coverage not found"
 
   qualys-was-scan:
-    runs-on: ubuntu-latest
     needs: build-and-test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Run Qualys WAS Scan
         uses: Qualys/github-action-qwas@v1.0.0

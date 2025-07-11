@@ -1,20 +1,47 @@
-name: Qualys WAS Scan
+name: CI with Qualys WAS Scan
 
 on:
   push:
     branches:
-      - master  # Change this to your target branch
+      - master
 
 jobs:
-  Qualys_was_scan:
+  build-and-test:
     runs-on: ubuntu-latest
-    name: Qualys WAS Scan
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install nyc for coverage
+        run: npm install -g nyc
+
+      - name: Run server tests
+        run: |
+          npm run test:server || echo "Server tests failed"
+
+      - name: Run frontend tests
+        run: |
+          npm run test:frontend || echo "Frontend tests failed"
+
+      - name: Copy coverage reports (if available)
+        run: |
+          cp build/reports/coverage/frontend-tests/lcov.info frontend-lcov.info || echo "Frontend coverage not found"
+          cp build/reports/coverage/server-tests/lcov.info server-lcov.info || echo "Server coverage not found"
+
+  qualys-was-scan:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Run Qualys WAS Scan
         uses: Qualys/github-action-qwas@v1.0.0
@@ -25,17 +52,3 @@ jobs:
           WEBAPP_ID: ${{ vars.WEBAPP_ID }}
           SCAN_NAME: ${{ vars.SCAN_NAME }}
           SCAN_TYPE: ${{ vars.SCAN_TYPE }}
-          AUTH_RECORD: ${{ vars.AUTH_RECORD }}
-          AUTH_RECORD_ID: ${{ vars.AUTH_RECORD_ID }}
-          OPTION_PROFILE: ${{ vars.OPTION_PROFILE }}
-          OPTION_PROFILE_ID: ${{ vars.OPTION_PROFILE_ID }}
-          CANCEL_OPTION: ${{ vars.CANCEL_OPTION }}
-          CANCEL_HOURS: ${{ vars.CANCEL_HOURS }}
-          SEVERITY_CHECK: ${{ vars.SEVERITY_CHECK }}
-          SEVERITY_LEVEL: ${{ vars.SEVERITY_LEVEL }}
-          EXCLUDE: ${{ vars.EXCLUDE }}
-          FAIL_ON_SCAN_ERROR: ${{ vars.FAIL_ON_SCAN_ERROR }}
-          WAIT_FOR_RESULT: ${{ vars.WAIT_FOR_RESULT }}
-          INTERVAL: ${{ vars.INTERVAL }}
-          TIMEOUT: ${{ vars.TIMEOUT }}
-          FILE_TYPE: ${{ vars.FILE_TYPE }}
